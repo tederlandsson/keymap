@@ -4,6 +4,32 @@
 #define TG_NKRO MAGIC_TOGGLE_NKRO
 
 
+
+// Tap Dance keycodes
+enum td_keycodes {
+    H_CTL
+};
+
+// Define a type containing as many tapdance states as you need
+typedef enum {
+    TD_NONE,
+    TD_UNKNOWN,
+    TD_SINGLE_TAP,
+    TD_SINGLE_HOLD,
+    TD_DOUBLE_HOLD
+} td_state_t;
+
+// Create a global instance of the tapdance state type
+static td_state_t td_state;
+
+// Function to determine the current tapdance state
+td_state_t cur_dance(qk_tap_dance_state_t *state);
+
+// `finished` and `reset` functions for each tapdance keycode
+void htcl_finished(qk_tap_dance_state_t *state, void *user_data);
+void htcl_reset(qk_tap_dance_state_t *state, void *user_data);
+
+
 // Layer names
 
 // TODO: Add hjkl arrows layer
@@ -37,7 +63,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  */
 [_WORKMAN] = LAYOUT_ortho_4x12( \
   KC_TAB,  KC_Q,    KC_D,    KC_R,    KC_W,    KC_B,    KC_J,    KC_F,    KC_U,    KC_P,    KC_SCLN,    KC_BSPC, \
-  KC_GRAVE,  KC_A,    KC_S,    KC_H,    KC_T,    KC_G,    KC_Y,    KC_N,    KC_E,    KC_O,    KC_I, KC_QUOT, \
+  KC_GRAVE,  KC_A,    KC_S,    TD(H_CTL),    KC_T,    KC_G,    KC_Y,    KC_N,    KC_E,    KC_O,    KC_I, KC_QUOT, \
   KC_LSFT, KC_Z,    KC_X,    KC_M,    KC_C,    KC_V,    KC_K,    KC_L,    KC_COMM, KC_DOT,  KC_SLSH, KC_ENT , \
   ADJUST, KC_LCTRL, KC_LALT, KC_LGUI,  LOWER,   KC_SPC,  KC_SPC,  RAISE,   KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT \
 ),
@@ -115,9 +141,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, \
   RESET, _______, _______, _______, _______, AU_OFF,  AU_ON,   _______, _______, _______, _______, RESET \
 )
-
-
 };
+
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
@@ -164,3 +189,57 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   }
   return true;
 }
+
+
+// Determine the tapdance state to return
+td_state_t cur_dance(qk_tap_dance_state_t *state) {
+    if (state->count == 1) {
+        if (state->interrupted || !state->pressed) return TD_SINGLE_TAP;
+        else return TD_SINGLE_HOLD;
+    }
+
+    if (state->count == 2) return TD_DOUBLE_HOLD;
+    else return TD_UNKNOWN; // Any number higher than the maximum state value you return above
+}
+
+void htcl_finished(qk_tap_dance_state_t *state, void *user_data) {
+    td_state = cur_dance(state);
+    switch (td_state) {
+        case TD_SINGLE_TAP:
+            register_code16(KC_H);
+            break;
+        case TD_SINGLE_HOLD:
+            register_code(KC_LGUI); // For a layer-tap key, use `layer_on(_MY_LAYER)` here
+            break;
+        case TD_DOUBLE_HOLD:
+            register_code(KC_LGUI);
+            register_code(KC_H);
+            break;
+        case TD_NONE:
+        case TD_UNKNOWN:
+            break;
+    }
+}
+
+void htcl_reset(qk_tap_dance_state_t *state, void *user_data) {
+    switch (td_state) {
+        case TD_SINGLE_TAP:
+            unregister_code16(KC_H);
+            break;
+        case TD_SINGLE_HOLD:
+            unregister_code(KC_LGUI); // For a layer-tap key, use `layer_off(_MY_LAYER)` here
+            break;
+        case TD_DOUBLE_HOLD:
+            unregister_code(KC_LGUI);
+            unregister_code(KC_H);
+            break;
+        case TD_NONE:
+        case TD_UNKNOWN:
+            break;
+    }
+}
+
+// Define `ACTION_TAP_DANCE_FN_ADVANCED()` for each tapdance keycode, passing in `finished` and `reset` functions
+qk_tap_dance_action_t tap_dance_actions[] = {
+    [H_CTL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, htcl_finished, htcl_reset)
+};

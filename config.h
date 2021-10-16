@@ -30,9 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // You can override the defaults (rev1 doesn't support SPLIT_HAND_PIN)
 #define EE_HANDS
-
-// TODO: Add tap dance
-// #define TAPPING_TERM 200
+#define TAPPING_TERM 200
 
 
 // Mouse
