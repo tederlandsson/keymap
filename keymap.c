@@ -632,7 +632,7 @@ void i_td_finished(qk_tap_dance_state_t *state, void *user_data) {
         case TD_SINGLE_TAP: register_code(KC_I); break;
         case TD_SINGLE_HOLD: register_code(KC_LCTRL); break;
         case TD_DOUBLE_HOLD:
-            register_code(KC_LCTRL);
+            register_code(KC_LGUI);
             register_code(KC_I);
             break;
         case TD_UNKNOWN:
